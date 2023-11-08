@@ -3,8 +3,6 @@ from .services import (delete_User_data_by_id_service,get_all_users_service,get_
 
 users = Blueprint("users",__name__)
 
-
-
 @users.route("/user/login",methods = ['Post'])
 def login_user():
     return login()
