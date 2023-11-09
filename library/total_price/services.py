@@ -9,11 +9,16 @@ totals_schema = Total_priceSchema(many=True)
 
 def add_total_data_service():
     data = request.json
-    if (('chessBoard' in data) and ('turn' in data)):
+    if (('chessBoard' in data) and ('turn' in data) and ('codeGame' in data) and ('player1' in data) and ('player2' in data) and ('winner' in data)):
         chessBoard = data['chessBoard']
         turn = data['turn']
+        codeGame = data['codeGame']
+        player1 = data['player1']
+        player2 = data['player2']
+        winner = data['winner']
         try:
-            new_total_data = Total_price(chessBoard, turn)
+            new_total_data = Total_price(
+                chessBoard, turn, codeGame, player1, player2, winner)
             db.session.add(new_total_data)
             db.session.commit()
             return jsonify({"message": f"Add success! with Id = {new_total_data.id}", "idRoom": new_total_data.id}), 200
@@ -44,10 +49,14 @@ def update_total_data_by_id_service(id):
     price = Total_price.query.get(id)
     if price:
         data = request.json
-        if (data and ('chessBoard' in data) and ('turn' in data)):
+        if (data and ('chessBoard' in data) and ('turn' in data) and ('codeGame' in data) and ('player1' in data) and ('player2' in data) and ('winner' in data)):
             try:
                 price.chessBoard = data['chessBoard']
                 price.turn = data['turn']
+                price.codeGame = data['codeGame']
+                price.player1 = data['player1']
+                price.player2 = data['player2']
+                price.winner = data['winner']
                 db.session.commit()
                 return jsonify({"message": "Price updated successfully"})
             except Exception as e:

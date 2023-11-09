@@ -2,6 +2,7 @@ from flask import Flask
 from library.extension import db
 from flask_mysqldb import MySQL
 from library.total_price.controller import totals_data
+from library.users.controller import users
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 
@@ -12,7 +13,7 @@ mysql = MySQL(app)
 jwt = JWTManager(app)
 CORS(app)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/chessdb'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/chessdb_testupdate'
 app.config['SECRET_KEY'] = 'my-secret-key'
 app.config['JWT_SECRET_KEY'] = 'my-jwt-secret-key'
 db.init_app(app)
@@ -28,4 +29,5 @@ def create_app():
 
 if __name__ == "__main__":
     app.register_blueprint(totals_data)
+    app.register_blueprint(users)
     app.run(debug=True)
