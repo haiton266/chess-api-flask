@@ -1,6 +1,7 @@
 from library.extension import db
 from library.library_ma import Total_priceSchema
 from library.model import Total_price
+from library.model import Users
 from flask import request, jsonify, json
 
 total_schema = Total_priceSchema()
@@ -49,19 +50,37 @@ def update_total_data_by_id_service(id):
     price = Total_price.query.get(id)
     if price:
         data = request.json
-        if (data and ('chessBoard' in data) and ('turn' in data) and ('codeGame' in data) and ('player1' in data) and ('player2' in data) and ('winner' in data)):
+        if (data and ('chessBoard' in data) and ('turn' in data) and ('winner' in data)):
             try:
                 price.chessBoard = data['chessBoard']
                 price.turn = data['turn']
-                price.codeGame = data['codeGame']
-                price.player1 = data['player1']
-                price.player2 = data['player2']
                 price.winner = data['winner']
                 db.session.commit()
                 return jsonify({"message": "Price updated successfully"})
             except Exception as e:
                 db.session.rollback()
                 return jsonify({"message": "Cannot update price!", "error": str(e)}), 400
+        else:
+            return jsonify({"message": "Invalid input data"}), 400
+    else:
+        return jsonify({"message": "Not found price!"}), 404
+
+
+def update_join_by_id_service(id):
+    price = Total_price.query.get(id)
+    if price:
+        data = request.json
+        if (data and ('codeGame' in data) and ('player2' in data) and (price.codeGame == data['codeGame'])):
+            try:
+                price.player2 = data['player2']
+                # price.codeGame = data['codeGame']
+                db.session.commit()
+                return jsonify({"message": "Price updated successfully"})
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({"message": "Cannot update price!", "error": str(e)}), 400
+        else:
+            return jsonify({"message": "Invalid input data or codeGame mismatch"}), 400
     else:
         return jsonify({"message": "Not found price!"}), 404
 

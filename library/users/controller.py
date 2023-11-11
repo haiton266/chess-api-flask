@@ -1,6 +1,6 @@
 from flask import Blueprint
 from .services import (delete_User_data_by_id_service, get_all_users_service,
-                       get_user_by_id_service, update_user_by_id_service, login, logout, register)
+                       get_user_by_id_service, update_user_by_id_service, login, logout, register, update_user_by_username_service)
 
 users = Blueprint("users", __name__)
 
@@ -33,6 +33,11 @@ def get_user_by_email(id):
 @users.route("/user/<int:id>", methods=["PUT"])
 def update_user_by_id(id):
     return update_user_by_id_service(id)
+
+
+@users.route("/user/<string:username>", methods=["PUT"])
+def update_user_by_username(username):
+    return update_user_by_username_service(username)
 
 
 @users.route("/user/<int:id>", methods=["DELETE"])

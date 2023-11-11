@@ -122,6 +122,24 @@ def update_user_by_id_service(id):
         return "Not found user"
 
 
+def update_user_by_username_service(username):
+    user = Users.query.filter_by(username=username).first()
+    data = request.json
+    if user:
+        if data and "score" in data:
+            try:
+                user.score += data["score"]
+                db.session.commit()
+                return "user Updated"
+            except IndentationError:
+                db.session.rollback()
+                return jsonify({"message": "Can not update!"}), 400
+        else:
+            return jsonify({"message": "Invalid input data"}), 400
+    else:
+        return "Not found user"
+
+
 def delete_User_data_by_id_service(id):
     price = Users.query.get(id)
     if price:

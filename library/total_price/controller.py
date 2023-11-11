@@ -1,6 +1,6 @@
 from flask import Blueprint
 from .services import (add_total_data_service, get_all_total_data_service,
-                       update_total_data_by_id_service, delete_total_data_by_id_service, get_by_id_service)
+                       update_total_data_by_id_service, delete_total_data_by_id_service, get_by_id_service, update_join_by_id_service)
 
 totals_data = Blueprint("totals_data", __name__)
 
@@ -23,6 +23,11 @@ def get_by_id_data(id):
 @totals_data.route("/total_data/update/<int:id>", methods=['PUT'])
 def update_price_by_id(id):
     return update_total_data_by_id_service(id)
+
+
+@totals_data.route("/total_data/update_join/<int:id>", methods=['PUT'])
+def update_join_by_id(id):
+    return update_join_by_id_service(id)
 
 
 @totals_data.route("/total_data/delete/<int:id>", methods=['DELETE'])
