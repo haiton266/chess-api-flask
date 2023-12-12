@@ -25,8 +25,10 @@ class Users(db.Model):
     username = db.Column(db.String(100), nullable=False)
     password = db.Column(db.String(20), nullable=False)
     score = db.Column(db.Integer, nullable=False)
+    numMatch = db.Column(db.Integer, nullable=False)
 
-    def __init__(self, username, password, score):
+    def __init__(self, username, password, score, numMatch):
         self.username = username
         self.password = password
         self.score = score
+        self.numMatch = numMatch

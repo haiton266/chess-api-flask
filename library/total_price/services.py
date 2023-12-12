@@ -1,3 +1,6 @@
+import chess
+import chess.engine
+import os
 from library.extension import db
 from library.library_ma import Total_priceSchema
 from library.model import Total_price
@@ -6,6 +9,53 @@ from flask import request, jsonify, json
 
 total_schema = Total_priceSchema()
 totals_schema = Total_priceSchema(many=True)
+
+# --------------------
+
+
+def create_board_from_string(board_str):
+    # Hàm này cần chuyển đổi chuỗi ký tự thành một bàn cờ mà thư viện chess có thể hiểu
+    board = chess.Board()
+    board.clear_board()
+    for i in range(0, len(board_str), 2):
+        piece_str = board_str[i]
+        player = board_str[i + 1]
+        if piece_str != '0':
+            piece = create_piece(piece_str, player)
+            square = chess.SQUARES[i // 2]
+            board.set_piece_at(square, piece)
+    return board
+
+
+def create_piece(piece_str, player):
+    piece_type = {
+        'R': chess.ROOK,
+        'N': chess.KNIGHT,
+        'B': chess.BISHOP,
+        'Q': chess.QUEEN,
+        'K': chess.KING,
+        'P': chess.PAWN
+    }.get(piece_str, None)
+    color = chess.WHITE if player == '2' else chess.BLACK
+    return chess.Piece(piece_type, color) if piece_type is not None else None
+
+
+def board_to_string(board):
+    # Hàm này cần chuyển đổi bàn cờ thành chuỗi ký tự để lưu vào cơ sở dữ liệu
+    board_str = ''
+    for square in chess.SQUARES:
+        piece = board.piece_at(square)
+        if piece:
+            piece_str = piece.symbol().upper(
+            ) if piece.color == chess.WHITE else piece.symbol().upper()
+            player = '2' if piece.color == chess.WHITE else '1'
+        else:
+            piece_str = '0'
+            player = '0'
+        board_str += piece_str + player
+    return board_str
+
+# --------------------
 
 
 def add_total_data_service():
@@ -52,10 +102,40 @@ def update_total_data_by_id_service(id):
         data = request.json
         if (data and ('chessBoard' in data) and ('turn' in data) and ('winner' in data)):
             try:
-                price.chessBoard = data['chessBoard']
-                price.turn = data['turn']
-                price.winner = data['winner']
-                db.session.commit()
+                print(data['player2'])
+                if data['winner'] == '0' and data['player2'] == 'AI' and 'player2' in data:
+                    board = create_board_from_string(data['chessBoard'])
+                    print(os.getcwd())
+                    engine_path = "./library/total_price/stockfish/stockfish-windows-x86-64-modern.exe"
+
+                    # Kiểm tra xem đường dẫn tới engine có tồn tại không
+                    if os.path.exists(engine_path):
+                        engine = chess.engine.SimpleEngine.popen_uci(
+                            engine_path)
+                        if engine:
+                            print("Engine created")
+                        else:
+                            print("Engine not created")
+                    else:
+                        print("Engine path does not exist")
+                    print(board.is_checkmate())
+                    board.turn = chess.WHITE
+                    if board.is_checkmate() == False:
+                        result = engine.play(
+                            board, chess.engine.Limit(time=0.1))
+                        board.push(result.move)
+                        price.chessBoard = board_to_string(board)
+                        # Since AI move, turn is changed
+                        price.turn = '2' if data['turn'] == '1' else '1'
+                    else:
+                        price.winner = 'AI'
+                    db.session.commit()
+                    engine.quit()
+                else:
+                    price.chessBoard = data['chessBoard']
+                    price.turn = data['turn']
+                    price.winner = data['winner']
+                    db.session.commit()
                 return jsonify({"message": "Price updated successfully"})
             except Exception as e:
                 db.session.rollback()
@@ -64,6 +144,26 @@ def update_total_data_by_id_service(id):
             return jsonify({"message": "Invalid input data"}), 400
     else:
         return jsonify({"message": "Not found price!"}), 404
+
+# OLD
+# def update_total_data_by_id_service(id):
+#     price = Total_price.query.get(id)
+#     if price:
+#         data = request.json
+#         if (data and ('chessBoard' in data) and ('turn' in data) and ('winner' in data)):
+#             try:
+#                 price.chessBoard = data['chessBoard']
+#                 price.turn = data['turn']
+#                 price.winner = data['winner']
+#                 db.session.commit()
+#                 return jsonify({"message": "Price updated successfully"})
+#             except Exception as e:
+#                 db.session.rollback()
+#                 return jsonify({"message": "Cannot update price!", "error": str(e)}), 400
+#         else:
+#             return jsonify({"message": "Invalid input data"}), 400
+#     else:
+#         return jsonify({"message": "Not found price!"}), 404
 
 
 def update_join_by_id_service(id):

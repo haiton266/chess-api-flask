@@ -9,4 +9,4 @@ class Total_priceSchema(ma.Schema):
 
 class UserSchema(ma.Schema):
     class Meta:
-        fields = ('id', 'username', 'password', 'score')
+        fields = ('id', 'username', 'password', 'score', 'numMatch')

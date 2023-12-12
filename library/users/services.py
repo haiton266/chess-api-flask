@@ -14,6 +14,7 @@ def register():
     username = data['username']
     password = data['password']
     score = data['score']
+    numMatch = data['numMatch']
     if not username or not password:
         return {'message': 'username,password are required'}, 400
 
@@ -23,7 +24,7 @@ def register():
         return {'message': 'username already exits'}, 400
 
     user = Users(username=username,
-                 password=password, score=score)
+                 password=password, score=score, numMatch=numMatch)
 
     db.session.add(user)
     db.session.commit()
@@ -69,23 +70,23 @@ def logout():
     return {'message': 'you are not login'}
 
 
-def add_user_service():
-    data = request.json
-    if (('username' in data) and ('password' in data)):
-        username = data['username']
-        password = data['password']
-        score = data['score']
-
-        try:
-            new_user = Users(username, password, score)
-            db.session.add(new_user)
-            db.session.commit()
-            return jsonify({"message": "Add sucess!"}), 200
-        except IndentationError:
-            db.session.rollback()
-            return jsonify({"message ": "Cannot add user"}), 400
-    else:
-        return jsonify({"message": "Request error"}), 400
+# def add_user_service():
+#     data = request.json
+#     if (('username' in data) and ('password' in data)):
+#         username = data['username']
+#         password = data   ['password']
+#         score = data['score']
+#         numMatch = data['numMatch']
+#         try:
+#             new_user = Users(username, password, score, numMatch)
+#             db.session.add(new_user)
+#             db.session.commit()
+#             return jsonify({"message": "Add sucess!"}), 200
+#         except IndentationError:
+#             db.session.rollback()
+#             return jsonify({"message ": "Cannot add user"}), 400
+#     else:
+#         return jsonify({"message": "Request error"}), 400
 
 
 def get_all_users_service():
@@ -113,6 +114,7 @@ def update_user_by_id_service(id):
                 user.username = data["username"]
                 user.password = data["password"]
                 user.score = data["score"]
+                user.numMatch = data["numMatch"]
                 db.session.commit()
                 return "user Updated"
             except IndentationError:
@@ -129,6 +131,7 @@ def update_user_by_username_service(username):
         if data and "score" in data:
             try:
                 user.score += data["score"]
+                user.numMatch += 1
                 db.session.commit()
                 return "user Updated"
             except IndentationError:
