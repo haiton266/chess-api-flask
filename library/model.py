@@ -23,12 +23,23 @@ class Total_price(db.Model):
 class Users(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), nullable=False)
-    password = db.Column(db.String(20), nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
     score = db.Column(db.Integer, nullable=False)
     numMatch = db.Column(db.Integer, nullable=False)
 
-    def __init__(self, username, password, score, numMatch):
+    def __init__(self, username, password, email, score, numMatch):
         self.username = username
         self.password = password
+        self.email = email
         self.score = score
         self.numMatch = numMatch
+
+
+# class UserRegistrationTemp(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     username = db.Column(db.String(100), nullable=False)
+#     hashed_password = db.Column(db.String(200), nullable=False)
+#     email = db.Column(db.String(100), nullable=False)
+#     otp = db.Column(db.String(6), nullable=False)
+#     expires_at = db.Column(db.DateTime, nullable=False)

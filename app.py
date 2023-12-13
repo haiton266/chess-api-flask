@@ -1,17 +1,37 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from library.extension import db
 from flask_mysqldb import MySQL
+from library.model import Users
 from library.total_price.controller import totals_data
 from library.users.controller import users
 from flask_jwt_extended import JWTManager
+import eventlet
+import random2
+from flask_mail import Mail, Message
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from datetime import datetime, timedelta
-import eventlet
+
+# import memcache
+# try:
+#     # Kết nối đến Memcached server
+#     memcached_client = memcache.Client(['127.0.0.1:11211'], debug=0)
+#     print('ok')
+# except Exception as e:
+#     print(f"Đã xảy ra lỗi khi kết nối tới memcached: {e}")
+
 
 app = Flask(__name__)
 
 
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = 'nh2515901@gmail.com'
+app.config['MAIL_PASSWORD'] = '841287775501aA'
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+
+mail = Mail(app)
 mysql = MySQL(app)
 jwt = JWTManager(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -28,7 +48,6 @@ with app.app_context():
 connected_clients = set()  # Initialize a set to store connected client IDs
 
 
-@app.route("/home", methods=["GET"])
 def create_app():
     return "APP created !"
 
