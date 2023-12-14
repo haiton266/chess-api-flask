@@ -1,8 +1,13 @@
 from flask import Blueprint
 from .services import (add_total_data_service, get_all_total_data_service,
-                       update_total_data_by_id_service, delete_total_data_by_id_service, get_by_id_service, update_join_by_id_service)
+                       update_total_data_by_id_service, delete_total_data_by_id_service, get_by_id_service, update_join_by_id_service, update_time)
 
 totals_data = Blueprint("totals_data", __name__)
+
+
+@totals_data.route("/total_data/update_time/<int:id>", methods=["POST"])
+def update_time_id(id):
+    return update_time(id)
 
 
 @totals_data.route("/total_data/add", methods=["POST"])

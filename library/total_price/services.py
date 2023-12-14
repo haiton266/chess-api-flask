@@ -1,3 +1,4 @@
+import time
 import chess
 import chess.engine
 import os
@@ -5,12 +6,39 @@ from library.extension import db
 from library.library_ma import Total_priceSchema
 from library.model import Total_price
 from library.model import Users
-from flask import request, jsonify, json
-
+from flask import app, request, jsonify, json
+import time
 total_schema = Total_priceSchema()
 totals_schema = Total_priceSchema(many=True)
 
 # --------------------
+# @app.route('/update_time/<int:id>', methods=['POST'])
+
+
+def update_time(id):
+    game = Total_price.query.get(id)
+    if game:
+        data = request.json
+        current_time = time.time()
+
+        # Cập nhật thời gian cho player 1 nếu chưa có
+        if 'time_player1' in data and not game.time_player1:
+            game.time_player1 = current_time
+
+        # Tương tự cho player 2
+        if 'time_player2' in data and not game.time_player2:
+            game.time_player2 = current_time
+
+        db.session.commit()
+
+        # Trả về thời gian đã cập nhật
+        return jsonify({
+            "message": "Time updated successfully",
+            "time_player1": game.time_player1,
+            "time_player2": game.time_player2
+        })
+    else:
+        return jsonify({"message": "Game not found"}), 404
 
 
 def create_board_from_string(board_str):
@@ -67,9 +95,10 @@ def add_total_data_service():
         player1 = data['player1']
         player2 = data['player2']
         winner = data['winner']
+        time_player1 = time.time()
         try:
             new_total_data = Total_price(
-                chessBoard, turn, codeGame, player1, player2, winner)
+                chessBoard, turn, codeGame, player1, player2, winner, time_player1, 0)
             db.session.add(new_total_data)
             db.session.commit()
             return jsonify({"message": f"Add success! with Id = {new_total_data.id}", "idRoom": new_total_data.id}), 200
@@ -91,7 +120,14 @@ def get_all_total_data_service():
 def get_by_id_service(id):
     price = Total_price.query.get(id)
     if price:
-        return total_schema.jsonify(price)
+        # Tính toán thời gian chênh lệch trước khi jsonify
+        time_diff = time.time() - price.time_player1
+        price.time_player1 = max(
+            30 - round(time_diff), 0)  # Cập nhật thời gian
+
+        # Chuyển đổi price thành JSON
+        data = total_schema.jsonify(price)
+        return data
     else:
         return jsonify({"message": "Not found price!"}), 404
 
@@ -135,6 +171,7 @@ def update_total_data_by_id_service(id):
                     price.chessBoard = data['chessBoard']
                     price.turn = data['turn']
                     price.winner = data['winner']
+                    price.time_player1 = time.time()
                     db.session.commit()
                 return jsonify({"message": "Price updated successfully"})
             except Exception as e:
@@ -173,6 +210,7 @@ def update_join_by_id_service(id):
         if (data and ('codeGame' in data) and ('player2' in data) and (price.codeGame == data['codeGame'])):
             try:
                 price.player2 = data['player2']
+                price.time_player1 = time.time()
                 # price.codeGame = data['codeGame']
                 db.session.commit()
                 return jsonify({"message": "Price updated successfully"})

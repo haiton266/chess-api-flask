@@ -1,6 +1,6 @@
 import memcache
 
-
+import bcrypt
 from flask_mail import Mail
 from flask_mail import Message
 import random2
@@ -33,6 +33,10 @@ app.config['MAIL_USE_SSL'] = True
 mail = Mail(app)
 
 
+def hash_password(password):
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+
 def verify_otp():
     data = request.json
     username = data['username']
@@ -41,15 +45,19 @@ def verify_otp():
     user_otp = data['otp']
     stored_otp = memcached_client.get(f"username:{username}")
     try:
-        if stored_otp and int(stored_otp) == int(user_otp):
-            hashed_password = generate_password_hash(password)
-            new_user = Users(username=username, password=hashed_password,
-                            email=email, score=0, numMatch=0)
+        # Kiểm tra xem OTP đã được sử dụng để tạo tài khoản hay chưa
+        if stored_otp and int(stored_otp) == int(user_otp) and not memcached_client.get(f"otp_used:{user_otp}"):
+            hashed_password = hash_password(password)
+            new_user = Users(username=username, password=hashed_password, email=email, score=0, numMatch=0)
             db.session.add(new_user)
             db.session.commit()
+
+            # Đánh dấu mã OTP đã được sử dụng
+            memcached_client.set(f"otp_used:{user_otp}", 'used', time=3600)  # Giả sử mã OTP sẽ hết hạn sau 1 giờ
+
             return jsonify({'message': 'OTP verified successfully'}), 200
         else:
-            return jsonify({'message': 'Invalid OTP'}), 400
+            return jsonify({'message': 'Invalid OTP or OTP already used'}), 400
     except Exception as e:
         return jsonify({'message': 'Error at try catch'}), 400
 
@@ -104,6 +112,11 @@ def register():
     return {'message': 'OTP sent to email successfully. Please verify.'}
 
 
+# def check_password(hashed_password, password):
+#     return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
+def check_password(hashed_password, password):
+    return bcrypt.checkpw(password.encode('utf-8'), hashed_password)
+
 def login():
     data = request.json
     username = data.get('username')
@@ -116,22 +129,32 @@ def login():
     if not user:
         return {'message': 'invalid username or password'}, 401
 
-    passhash = generate_password_hash(user.password)
-    if not check_password_hash(passhash, password):
-        return {'message': 'invalid username or password'}, 401
-    login_method = data.get('login_method', 'token')
+    # Mã hóa mật khẩu nhập vào sang dạng byte
+    password_encoded = password.encode('utf-8')
 
-    if login_method == 'token':
-        # Tạo JWT token
-        access_token = create_access_token(identity=user.id)
-        return {'username': user.username, 'password': user.password, 'id': user.id, 'score': user.score,
-                'access_token': access_token}, 200
-    elif login_method == 'session':
-        session['id'] = user.id
-        session['username'] = user.username
-        return {'message': user.username + '  Login success'}, 200
+    # Đảm bảo mật khẩu đã lưu trữ cũng ở dạng byte
+    # Giả sử rằng mật khẩu đã được mã hóa và lưu trữ ở dạng byte trong cơ sở dữ liệu
+    # Nếu không, bạn cần sử dụng user.password.encode('utf-8')
+    stored_password = user.password if isinstance(user.password, bytes) else user.password.encode('utf-8')
+
+    # So sánh mật khẩu
+    if user and bcrypt.checkpw(password_encoded, stored_password):
+        login_method = data.get('login_method', 'token')
+
+        if login_method == 'token':
+            # Tạo JWT token
+            access_token = create_access_token(identity=user.id)
+            return {'username': user.username, 'password': user.password, 'id': user.id, 'score': user.score,
+                    'access_token': access_token}, 200
+        elif login_method == 'session':
+            session['id'] = user.id
+            session['username'] = user.username
+            return {'message': user.username + '  Login success'}, 200
+        else:
+            return {'message': 'Invalid login method'}, 400
     else:
-        return {'message': 'Invalid login method'}, 400
+        return {'message': 'invalid username or password'}, 401
+
 
 
 def logout():

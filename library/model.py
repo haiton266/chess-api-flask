@@ -10,14 +10,20 @@ class Total_price(db.Model):
     player1 = db.Column(db.String(50), nullable=False)
     player2 = db.Column(db.String(50), nullable=False)
     winner = db.Column(db.String(50), nullable=False)
+    # ... các trường khác ...
+    time_player1 = db.Column(db.Integer, nullable=False,
+                             )  # 900 giây = 15 phút
+    time_player2 = db.Column(db.Integer, nullable=False)
 
-    def __init__(self, chessBoard, turn, codeGame, player1, player2, winner):
+    def __init__(self, chessBoard, turn, codeGame, player1, player2, winner, time_player1, time_player2):
         self. chessBoard = chessBoard
         self. turn = turn
         self.codeGame = codeGame
         self.player1 = player1
         self.player2 = player2
         self.winner = winner
+        self.time_player1 = time_player1
+        self.time_player2 = time_player2
 
 
 class Users(db.Model):
