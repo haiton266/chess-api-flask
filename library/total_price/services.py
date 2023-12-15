@@ -21,13 +21,21 @@ def update_time(id):
         data = request.json
         current_time = time.time()
 
-        # Cập nhật thời gian cho player 1 nếu chưa có
-        if 'time_player1' in data and not game.time_player1:
-            game.time_player1 = current_time
+        # Kiểm tra lượt đi hiện tại từ dữ liệu đầu vào và so sánh với trạng thái hiện tại của trò chơi
+        if 'turn' in data:
+            # Giả sử bạn lưu trữ lượt đi hiện tại trong thuộc tính 'turn' của đối tượng game
+            current_turn = game.turn
 
-        # Tương tự cho player 2
-        if 'time_player2' in data and not game.time_player2:
-            game.time_player2 = current_time
+            # Chỉ cập nhật thời gian cho người chơi đang có lượt
+            if data['turn'] == current_turn:
+                if current_turn == '1':
+                    game.time_player1 = current_time if not game.time_player1 else game.time_player1
+                elif current_turn == '2':
+                    game.time_player2 = current_time if not game.time_player2 else game.time_player2
+            else:
+                return jsonify({"message": "Not player's turn"}), 400
+        else:
+            return jsonify({"message": "Turn information is missing"}), 400
 
         db.session.commit()
 
@@ -96,9 +104,10 @@ def add_total_data_service():
         player2 = data['player2']
         winner = data['winner']
         time_player1 = time.time()
+        time_player2 = time.time()
         try:
             new_total_data = Total_price(
-                chessBoard, turn, codeGame, player1, player2, winner, time_player1, 0)
+                chessBoard, turn, codeGame, player1, player2, winner, time_player1, time_player2)
             db.session.add(new_total_data)
             db.session.commit()
             return jsonify({"message": f"Add success! with Id = {new_total_data.id}", "idRoom": new_total_data.id}), 200
@@ -117,14 +126,18 @@ def get_all_total_data_service():
         return jsonify({"message": "Not found sensors_data!"})
 
 
-def get_by_id_service(id):
+def get_by_id_service(id, p):
     price = Total_price.query.get(id)
     if price:
-        # Tính toán thời gian chênh lệch trước khi jsonify
-        time_diff = time.time() - price.time_player1
-        price.time_player1 = max(
-            30 - round(time_diff), 0)  # Cập nhật thời gian
-
+        if p == 1:
+            time_diff = time.time() - price.time_player1
+            price.total_time1 = max(
+                price.total_time1 - round(time_diff), 0)
+        elif p == 2:
+            time_diff = time.time() - price.time_player2
+            price.total_time2 = max(
+                price.total_time2 - round(time_diff), 0)
+        print(price.total_time1)
         # Chuyển đổi price thành JSON
         data = total_schema.jsonify(price)
         return data
@@ -171,7 +184,14 @@ def update_total_data_by_id_service(id):
                     price.chessBoard = data['chessBoard']
                     price.turn = data['turn']
                     price.winner = data['winner']
+                    if price.turn == 2:  # thằng 1 đi
+                        # Giảm quỹ thời gian
+                        price.total_time1 -= (time.time() - price.time_player1)
+                    else:
+                        price.total_time2 -= (time.time() - price.time_player2)
+                    # Cập nhật mốc cho cả 2
                     price.time_player1 = time.time()
+                    price.time_player2 = time.time()
                     db.session.commit()
                 return jsonify({"message": "Price updated successfully"})
             except Exception as e:
@@ -181,6 +201,7 @@ def update_total_data_by_id_service(id):
             return jsonify({"message": "Invalid input data"}), 400
     else:
         return jsonify({"message": "Not found price!"}), 404
+
 
 # OLD
 # def update_total_data_by_id_service(id):
@@ -211,6 +232,7 @@ def update_join_by_id_service(id):
             try:
                 price.player2 = data['player2']
                 price.time_player1 = time.time()
+                price.time_player2 = time.time()
                 # price.codeGame = data['codeGame']
                 db.session.commit()
                 return jsonify({"message": "Price updated successfully"})

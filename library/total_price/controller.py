@@ -20,9 +20,9 @@ def get_all_sensors_data():
     return get_all_total_data_service()
 
 
-@totals_data.route("/total_data/<int:id>", methods=["GET"])
-def get_by_id_data(id):
-    return get_by_id_service(id)
+@totals_data.route("/total_data/<int:id>/<int:p>", methods=["GET"])
+def get_by_id_data(id, p):
+    return get_by_id_service(id, p)
 
 
 @totals_data.route("/total_data/update/<int:id>", methods=['PUT'])
