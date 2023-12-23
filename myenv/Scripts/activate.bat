@@ -1,4 +1,4 @@
-@set "VIRTUAL_ENV=D:\hungtest\chess-api-Copy\myenv"
+@set "VIRTUAL_ENV=D:\monhoc\restfullapi\PBL3\chess-api-flask - Copy\myenv"
 
 @set "VIRTUAL_ENV_PROMPT="
 @if NOT DEFINED VIRTUAL_ENV_PROMPT (

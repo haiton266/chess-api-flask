@@ -1,17 +1,22 @@
 from flask import Flask, request, jsonify, session
 from library.extension import db
 from flask_mysqldb import MySQL
-from library.model import Users
+from library.model import Role, Users
 from library.total_price.controller import totals_data
 from library.users.controller import users
 from flask_jwt_extended import JWTManager
-import eventlet
 import random2
 from flask_mail import Mail, Message
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from datetime import datetime, timedelta
-
+from flask_login import LoginManager
+from flask_principal import Principal, Permission, RoleNeed
+from flask_security import RoleMixin, SQLAlchemyUserDatastore, Security
+import bcrypt
+import eventlet
+import eventlet.wsgi
+import ssl
 # import memcache
 # try:
 #     # Kết nối đến Memcached server
@@ -23,6 +28,7 @@ from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
+app.secret_key = 'your_secret_key'
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
@@ -31,6 +37,7 @@ app.config['MAIL_PASSWORD'] = '841287775501aA'
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 
+principal = Principal(app)
 mail = Mail(app)
 mysql = MySQL(app)
 jwt = JWTManager(app)
@@ -40,74 +47,67 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/chessdb_testupdate'
 app.config['SECRET_KEY'] = 'my-secret-key'
 app.config['JWT_SECRET_KEY'] = 'my-jwt-secret-key'
+login_manager = LoginManager()
+login_manager.init_app(app)
+admin_permission = Permission(RoleNeed('admin'))
 
 
+user_datastore = SQLAlchemyUserDatastore(db, Users, Role)
+security = Security(app, user_datastore)
 db.init_app(app)
 with app.app_context():
     db.create_all()
-    print("Created DB")
+
+    # Kiểm tra xem người dùng admin đã tồn tại chưa
+    if not user_datastore.get_user('admin@example.com'):
+        # Tạo người dùng mới và băm mật khẩu
+        admin_password = '1'  # Mật khẩu ban đầu
+        hashed_password = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt())
+        user_datastore.create_user(
+            username='admin',
+            email='admin@example.com',
+            password=hashed_password,
+            score=0,
+            numMatch=0,
+            is_admin=True
+        )
+
+    # Tạo vai trò admin nếu nó chưa tồn tại
+    if not user_datastore.find_role('admin'):
+        user_datastore.create_role(name='admin')
+
+    db.session.commit()
+
+    # Gán vai trò admin cho người dùng
+    admin_user = user_datastore.get_user('admin@example.com')
+    admin_role = user_datastore.find_role('admin')
+    user_datastore.add_role_to_user(admin_user, admin_role)
+    db.session.commit()
 
 connected_clients = set()  # Initialize a set to store connected client IDs
 
-
+@socketio.on('my event')
+def handle_my_custom_event(json):
+    print('received json: ' + str(json))
 def create_app():
     return "APP created !"
+@users.route('/')
+def home():
+    return 'Hello, HTTPS world!'
 
 
-# @socketio.on("connect")
-# def connected():
-#     global connected_clients
-#     client_id = request.sid
-#     global old_time
-#     old_time = datetime.now()
-#     if client_id not in connected_clients:
-#         connected_clients.add(client_id)
-#         print(client_id)
-#         print("client has connected")
-#         emit("connect", {"data": f"id: {client_id} is connected"})
+ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+ssl_context.load_cert_chain('mycert.crt', 'mykey.key')
 
+# Tạo socket và bọc nó trong SSL context
+listener = eventlet.listen(('0.0.0.0',0))
+secure_listener = eventlet.wrap_ssl(listener, certfile='mycert.crt', keyfile='mykey.key', server_side=True)
 
-# @socketio.on("disconnect")
-# def disconnected():
-#     global connected_clients
-#     client_id = request.sid
-#     if client_id in connected_clients:
-#         connected_clients.remove(client_id)
-#         print("user disconnected")
-#         emit("disconnect", f"user {client_id} disconnected", broadcast=True)
-
-
-# @socketio.on('get_time')
-# def send_time_interval():
-#     print("TIME START COUNTING")
-#     global old_time
-
-#     while True:
-#         # Calculate the time difference
-#         time_diff = datetime.now() - old_time
-
-#         # Remove milliseconds from the time difference
-#         time_diff_without_ms = time_diff - \
-#             timedelta(microseconds=time_diff.microseconds)
-#         time_diff_without_ms = 20 - time_diff_without_ms.seconds
-#         if time_diff_without_ms <= 0:
-#             time_diff_without_ms = 0
-#         # Xử lý thằng thắng thằng thua
-#         # Change timedelta to string for JSON serialization
-#         emit("get_time", {"time": str(time_diff_without_ms)})
-#         eventlet.sleep(0.25)
-
-
-# if __name__ == "__main__":
-#     app.register_blueprint(totals_data)
-#     app.register_blueprint(users)
-#     app.run(debug=True)
-#     # socketio.run(app, debug=True, port=5000)
-
+# Chạy server
 
 if __name__ == "__main__":
     app.register_blueprint(totals_data)
     app.register_blueprint(users)
-    # Remove app.run(debug=True)
-    # Run the application using SocketIO
-    socketio.run(app, debug=True, port=5001)
+    
+    # Cấu hình và chạy server với SSL thông qua Flask-SocketIO
+    socketio.run(app, debug=True, host='0.0.0.0', port=5001, keyfile='mykey.key', certfile='mycert.crt')
