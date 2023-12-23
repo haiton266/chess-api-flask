@@ -68,13 +68,19 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
-    # Kiểm tra xem người dùng admin đã tồn tại chưa
+    # Tạo vai trò admin nếu chưa tồn tại
+    if not user_datastore.find_role('admin'):
+        user_datastore.create_role(name='admin')
+
+    db.session.commit()
+
+    # Kiểm tra và tạo người dùng admin
     admin_user = Users.query.filter_by(email='admin@example.com').first()
     if not admin_user:
         # Tạo người dùng mới và băm mật khẩu
         admin_password = '1'  # Mật khẩu ban đầu
         hashed_password = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt())
-        user_datastore.create_user(
+        admin_user = user_datastore.create_user(
             username='admin',
             email='admin@example.com',
             password=hashed_password,
@@ -82,10 +88,13 @@ with app.app_context():
             numMatch=0,
             is_admin=True
         )
+        db.session.commit()
 
-    # Tạo vai trò admin nếu nó chưa tồn tại
-    if not user_datastore.find_role('admin'):
-        user_datastore.create_role(name='admin')
+    # Gán vai trò admin cho người dùng admin
+    admin_role = user_datastore.find_role('admin')
+    if admin_user and admin_role:
+        user_datastore.add_role_to_user(admin_user, admin_role)
+        db.session.commit()
 
     db.session.commit()
 
