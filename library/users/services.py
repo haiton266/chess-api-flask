@@ -63,13 +63,16 @@ def verify_otp():
         # Kiểm tra xem OTP đã được sử dụng để tạo tài khoản hay chưa
         if stored_otp and int(stored_otp) == int(user_otp) and not memcached_client.get(f"otp_used:{user_otp}"):
             hashed_password = hash_password(password)
+            print("ök1")
             new_user = Users(username=username, password=hashed_password, email=email, score=0, numMatch=0)
+            print("ök2")
             db.session.add(new_user)
+            print("ök2.5")
             db.session.commit()
-
+            print("ök3")
             # Đánh dấu mã OTP đã được sử dụng
             memcached_client.set(f"otp_used:{user_otp}", 'used', time=3600)  # Giả sử mã OTP sẽ hết hạn sau 1 giờ
-
+            print("ök4")
             return jsonify({'message': 'OTP verified successfully'}), 200
         else:
             return jsonify({'message': 'Invalid OTP or OTP already used'}), 400

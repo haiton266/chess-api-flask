@@ -1,3 +1,5 @@
+import math
+from library.model import Round, Seed, Team
 import time
 import chess
 import chess.engine
@@ -13,7 +15,6 @@ from datetime import timedelta
 
 total_schema = Total_priceSchema()
 totals_schema = Total_priceSchema(many=True)
-
 # --------------------
 # @app.route('/update_time/<int:id>', methods=['POST'])
 
@@ -251,6 +252,33 @@ def delete_total_data_by_id_service(id):
     price = Total_price.query.get(id)
     if price:
         try:
+            # Check if the game in seeds table then update the status
+            seed = Seed.query.filter_by(matchID=price.id).first()
+            if seed:
+                # Tính hiệu của id vừa tìm thấy với id đầu tiên hiện có trong bảng
+                id_diff = seed.id - Seed.query.first().id
+                # Tính số lượng người chơi
+                numOfPlayer = Seed.query.count() + 1
+                updateSeedId = seed.id + id_diff // 2 + numOfPlayer // 2
+                print("price.winner", price.winner)
+                if price.winner == '1':
+                    username = Team.query.filter_by(
+                        seed_id=seed.id).first().name
+                else:
+                    # Lấy username của người chơi thắng để cập nhật vào bảng, đối tượng team nằm sau, .second()
+                    username = Team.query.filter_by(
+                        seed_id=seed.id)[1].name
+                seed.result = username + " win"
+                print("username", username)
+                if id_diff % 2 == 0:
+                    updateTeam = Team.query.filter_by(
+                        seed_id=updateSeedId).first()
+                    updateTeam.name = username
+                else:
+                    updateTeam = Team.query.filter_by(
+                        seed_id=updateSeedId)[1]
+                    updateTeam.name = username
+                db.session.commit()
             db.session.delete(price)
             db.session.commit()
             return jsonify({"message": "Price deleted successfully"})

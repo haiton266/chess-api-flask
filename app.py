@@ -4,6 +4,7 @@ from flask_mysqldb import MySQL
 from library.model import Role, Users
 from library.total_price.controller import totals_data
 from library.users.controller import users
+from library.tournament.controller import tournament
 from flask_jwt_extended import JWTManager
 import random2
 from flask_mail import Mail, Message
@@ -127,6 +128,6 @@ secure_listener = eventlet.wrap_ssl(listener, certfile='mycert.crt', keyfile='my
 if __name__ == "__main__":
     app.register_blueprint(totals_data)
     app.register_blueprint(users)
-    
+    app.register_blueprint(tournament)
     # Cấu hình và chạy server với SSL thông qua Flask-SocketIO
     socketio.run(app, debug=True, host='0.0.0.0', port=5001, keyfile='mykey.key', certfile='mycert.crt')
