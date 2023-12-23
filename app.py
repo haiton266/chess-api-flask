@@ -4,6 +4,7 @@ from flask_mysqldb import MySQL
 from library.model import Users
 from library.total_price.controller import totals_data
 from library.users.controller import users
+from library.tournament.controller import tournament
 from flask_jwt_extended import JWTManager
 import eventlet
 import random2
@@ -108,6 +109,7 @@ def create_app():
 if __name__ == "__main__":
     app.register_blueprint(totals_data)
     app.register_blueprint(users)
+    app.register_blueprint(tournament)
     # Remove app.run(debug=True)
     # Run the application using SocketIO
     socketio.run(app, debug=True, port=5001)
