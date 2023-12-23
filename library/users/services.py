@@ -172,22 +172,24 @@ def login():
         return {'message': 'Invalid username or password'}, 401
 
 
-def logout():
-    if 'username' in session and 'id' in session:
-        username = session['username']
-        session.pop('id', None)
+def logout(username):
+    # Tìm người dùng dựa trên username
+    user = Users.query.filter_by(username=username).first()
+    if user:
+        user.active = False
+        db.session.commit()
+
+        # Xóa thông tin người dùng khỏi session
         session.pop('username', None)
-        
-        # Đặt trạng thái "active" của người dùng thành False
-        user = Users.query.filter_by(username=username).first()
-        if user:
-            user.active = False
-            db.session.commit()
-            print("User logged out")
-        
-        identity_changed.send(app, identity=AnonymousIdentity())
-        return {'message': username + ' logged out successfully'}
-    return {'message': 'You are not logged in'}
+        session.pop('id', None)
+
+        print(f"User {username} logged out")
+        return jsonify({'message': f'{username} logged out successfully'})
+    else:
+        return jsonify({'message': 'User not found'})
+
+
+
 def get_all_users_service():
     users = Users.query.all()
     if users:

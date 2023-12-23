@@ -8,18 +8,18 @@ users = Blueprint("users", __name__)
 
 
 
-@users.route("/user/verify_otp", methods=['Post'])
+@users.route("/user/verify_otp", methods=['POST'])
 def verify_otp_user():
     return verify_otp()
 
-@users.route("/user/login", methods=['Post'])
+@users.route("/user/login", methods=['POST'])
 def login_user():
     return login()
 
 
-@users.route("/user/logout", methods=['GET'])
-def logout_user():
-    return logout()
+@users.route("/user/<string:username>/logout", methods=['POST'])
+def logout_user(username):
+    return logout(username)
 
 
 @users.route("/user/register", methods=["POST"])
