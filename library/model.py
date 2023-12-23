@@ -1,3 +1,5 @@
+from datetime import datetime
+import uuid  # Sửa lỗi ở đây
 from flask_security import RoleMixin
 from library.extension import db
 from flask_jwt_extended import get_jwt_identity
@@ -55,8 +57,10 @@ class Users(db.Model, UserMixin):
     numMatch = db.Column(db.Integer, nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     active = db.Column(db.Boolean, default=False)  # Thêm trường này
+    last_active = db.Column(db.DateTime, default=datetime.utcnow)
     roles = db.relationship('Role', secondary=roles_users, backref=db.backref('users', lazy='dynamic'))
-    def __init__(self, username, password, email, score, numMatch, is_admin=False, active=False, roles=[]):
+    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False)
+    def __init__(self, username, password, email, score, numMatch, is_admin=False, active=False, roles=[], last_active=datetime.utcnow(),fs_uniquifier=None):  # Thêm tham số active (mặc định là False) và roles (mặc định là một mảng rỗng)
         self.username = username
         self.password = password
         self.email = email
@@ -64,8 +68,11 @@ class Users(db.Model, UserMixin):
         self.numMatch = numMatch
         self.is_admin = is_admin
         self.active=active
-        self.roles=roles # Cập nhật giá trị này
-
+        self.roles=roles
+        self.last_active=last_active
+        self.fs_uniquifier=fs_uniquifier# Cập nhật giá trị này
+        if fs_uniquifier is None:
+            fs_uniquifier = str(uuid.uuid4())
     def set_admin_status(self, admin_status):
         self.is_admin = admin_status
 

@@ -1,3 +1,4 @@
+import datetime
 import memcache
 
 import bcrypt
@@ -36,6 +37,12 @@ mail = Mail(app)
 admin_role = RoleNeed('admin')
 user_role = RoleNeed('user')
 admin_permission = Permission(admin_role)
+
+
+def create_token(user_id):
+    expires = datetime.timedelta(minutes=30)
+    access_token = create_access_token(identity=user_id, expires_delta=expires)
+    return access_token
 
 def hash_password(password):
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
@@ -188,7 +195,27 @@ def logout(username):
     else:
         return jsonify({'message': 'User not found'})
 
+def update_last_active(user_id):
+    user = Users.query.get(user_id)
+    if user:
+        user.last_active = datetime.utcnow()
+        db.session.commit()
 
+
+
+def logout_inactive_users():
+    # Đặt thời gian không hoạt động tối đa, ví dụ: 30 phút
+    max_inactive_time = datetime.timedelta(minutes=30)
+
+    # Tìm tất cả người dùng không hoạt động quá thời gian cho phép
+    inactive_users = Users.query.filter(
+        Users.last_active < (datetime.utcnow() - max_inactive_time)
+    ).all()
+
+    for user in inactive_users:
+        user.active = False
+        # Thêm bất kỳ logic đăng xuất nào khác ở đây
+        db.session.commit()
 
 def get_all_users_service():
     users = Users.query.all()

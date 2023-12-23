@@ -17,6 +17,9 @@ import bcrypt
 import eventlet
 import eventlet.wsgi
 import ssl
+# from flask_apscheduler import APScheduler
+
+from library.users.services import logout_inactive_users
 # import memcache
 # try:
 #     # Kết nối đến Memcached server
@@ -43,6 +46,13 @@ mysql = MySQL(app)
 jwt = JWTManager(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+# scheduler = APScheduler()
+# Cấu hình và khởi tạo APScheduler
+# scheduler.init_app(app)
+# scheduler.start()
+
+
+
 socketio = SocketIO(app, cors_allowed_origins="*")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/chessdb_testupdate'
 app.config['SECRET_KEY'] = 'my-secret-key'
@@ -59,7 +69,8 @@ with app.app_context():
     db.create_all()
 
     # Kiểm tra xem người dùng admin đã tồn tại chưa
-    if not user_datastore.get_user('admin@example.com'):
+    admin_user = Users.query.filter_by(email='admin@example.com').first()
+    if not admin_user:
         # Tạo người dùng mới và băm mật khẩu
         admin_password = '1'  # Mật khẩu ban đầu
         hashed_password = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt())
@@ -79,7 +90,6 @@ with app.app_context():
     db.session.commit()
 
     # Gán vai trò admin cho người dùng
-    admin_user = user_datastore.get_user('admin@example.com')
     admin_role = user_datastore.find_role('admin')
     user_datastore.add_role_to_user(admin_user, admin_role)
     db.session.commit()
@@ -95,7 +105,7 @@ def create_app():
 def home():
     return 'Hello, HTTPS world!'
 
-
+# scheduler.add_job(func=logout_inactive_users, trigger='interval', minutes=30)
 ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 ssl_context.load_cert_chain('mycert.crt', 'mykey.key')
 

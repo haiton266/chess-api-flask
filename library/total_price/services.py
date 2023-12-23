@@ -2,18 +2,20 @@ import time
 import chess
 import chess.engine
 import os
+
+from flask_jwt_extended import create_access_token
 from library.extension import db
 from library.library_ma import Total_priceSchema
 from library.model import Total_price
 from library.model import Users
 from flask import app, request, jsonify, json
-import time
+from datetime import timedelta
+
 total_schema = Total_priceSchema()
 totals_schema = Total_priceSchema(many=True)
 
 # --------------------
 # @app.route('/update_time/<int:id>', methods=['POST'])
-
 
 def update_time(id):
     game = Total_price.query.get(id)
