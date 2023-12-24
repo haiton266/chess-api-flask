@@ -53,7 +53,6 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 # scheduler.start()
 
 
-
 socketio = SocketIO(app, cors_allowed_origins="*")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/chessdb_testupdate'
 app.config['SECRET_KEY'] = 'my-secret-key'
@@ -80,7 +79,8 @@ with app.app_context():
     if not admin_user:
         # Tạo người dùng mới và băm mật khẩu
         admin_password = '1'  # Mật khẩu ban đầu
-        hashed_password = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt())
+        hashed_password = bcrypt.hashpw(
+            admin_password.encode('utf-8'), bcrypt.gensalt())
         admin_user = user_datastore.create_user(
             username='admin',
             email='admin@example.com',
@@ -106,22 +106,29 @@ with app.app_context():
 
 connected_clients = set()  # Initialize a set to store connected client IDs
 
+
 @socketio.on('my event')
 def handle_my_custom_event(json):
     print('received json: ' + str(json))
+
+
 def create_app():
     return "APP created !"
+
+
 @users.route('/')
 def home():
     return 'Hello, HTTPS world!'
 
+
 # scheduler.add_job(func=logout_inactive_users, trigger='interval', minutes=30)
 ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-ssl_context.load_cert_chain('mycert.crt', 'mykey.key')
+ssl_context.load_cert_chain('cert.pem', 'key.pem')
 
 # Tạo socket và bọc nó trong SSL context
-listener = eventlet.listen(('0.0.0.0',0))
-secure_listener = eventlet.wrap_ssl(listener, certfile='mycert.crt', keyfile='mykey.key', server_side=True)
+listener = eventlet.listen(('0.0.0.0', 0))
+secure_listener = eventlet.wrap_ssl(
+    listener, certfile='cert.pem', keyfile='key.pem', server_side=True)
 
 # Chạy server
 
@@ -130,4 +137,4 @@ if __name__ == "__main__":
     app.register_blueprint(users)
     app.register_blueprint(tournament)
     # Cấu hình và chạy server với SSL thông qua Flask-SocketIO
-    socketio.run(app, debug=True, host='0.0.0.0', port=5001, keyfile='mykey.key', certfile='mycert.crt')
+    socketio.run(app, debug=True, host='0.0.0.0', port=5001)

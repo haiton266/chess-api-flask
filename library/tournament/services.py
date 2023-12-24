@@ -201,6 +201,7 @@ def get_all_tournament_service():
 
 def add_tournament_service():
     data = request.json
+    print("data", data)
     try:
         # Clear all data in Round, Seed, Team
         Team.query.delete()
