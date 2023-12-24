@@ -39,10 +39,13 @@ user_role = RoleNeed('user')
 admin_permission = Permission(admin_role)
 
 
-def create_token(user_id):
+def create_token(user_id, user_role):
     expires = datetime.timedelta(minutes=30)
-    access_token = create_access_token(identity=user_id, expires_delta=expires)
+    additional_claims = {"role": user_role}
+    access_token = create_access_token(identity=user_id, expires_delta=expires, additional_claims=additional_claims)
     return access_token
+
+
 
 def hash_password(password):
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
@@ -51,6 +54,19 @@ def hash_password(password):
 @admin_permission.require(http_exception=403)
 def admin_panel():
     return 'Chỉ dành cho quản trị viên!'
+
+
+
+
+
+def get_all_users_status_service():
+    users = Users.query.all()
+    users_status = [{"username": user.username, "active": user.active} for user in users]
+    return jsonify(users_status)
+
+
+
+
 
 def verify_otp():
     data = request.json
@@ -63,13 +79,9 @@ def verify_otp():
         # Kiểm tra xem OTP đã được sử dụng để tạo tài khoản hay chưa
         if stored_otp and int(stored_otp) == int(user_otp) and not memcached_client.get(f"otp_used:{user_otp}"):
             hashed_password = hash_password(password)
-            print("ök1")
             new_user = Users(username=username, password=hashed_password, email=email, score=0, numMatch=0)
-            print("ök2")
             db.session.add(new_user)
-            print("ök2.5")
             db.session.commit()
-            print("ök3")
             # Đánh dấu mã OTP đã được sử dụng
             memcached_client.set(f"otp_used:{user_otp}", 'used', time=3600)  # Giả sử mã OTP sẽ hết hạn sau 1 giờ
             print("ök4")
