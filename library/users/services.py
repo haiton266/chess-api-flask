@@ -39,13 +39,10 @@ user_role = RoleNeed('user')
 admin_permission = Permission(admin_role)
 
 
-def create_token(user_id, user_role):
+def create_token(user_id):
     expires = datetime.timedelta(minutes=30)
-    additional_claims = {"role": user_role}
-    access_token = create_access_token(identity=user_id, expires_delta=expires, additional_claims=additional_claims)
+    access_token = create_access_token(identity=user_id, expires_delta=expires)
     return access_token
-
-
 
 def hash_password(password):
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
@@ -54,9 +51,6 @@ def hash_password(password):
 @admin_permission.require(http_exception=403)
 def admin_panel():
     return 'Chỉ dành cho quản trị viên!'
-
-
-
 
 
 def get_all_users_status_service():
