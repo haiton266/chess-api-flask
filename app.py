@@ -120,7 +120,7 @@ ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 ssl_context.load_cert_chain('mycert.crt', 'mykey.key')
 
 # Tạo socket và bọc nó trong SSL context
-listener = eventlet.listen(('0.0.0.0',0))
+listener = eventlet.listen(('127.0.0.1',0))
 secure_listener = eventlet.wrap_ssl(listener, certfile='mycert.crt', keyfile='mykey.key', server_side=True)
 
 # Chạy server
@@ -130,4 +130,4 @@ if __name__ == "__main__":
     app.register_blueprint(users)
     app.register_blueprint(tournament)
     # Cấu hình và chạy server với SSL thông qua Flask-SocketIO
-    socketio.run(app, debug=True, host='0.0.0.0', port=5001, keyfile='mykey.key', certfile='mycert.crt')
+    socketio.run(app, debug=True, host='127.0.0.1', port=5001, keyfile='mykey.key', certfile='mycert.crt')
